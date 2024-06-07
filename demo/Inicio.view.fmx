@@ -1,0 +1,147 @@
+object Inicioview: TInicioview
+  Left = 0
+  Top = 0
+  Caption = 'Form1'
+  ClientHeight = 480
+  ClientWidth = 640
+  Position = ScreenCenter
+  FormFactor.Width = 320
+  FormFactor.Height = 480
+  FormFactor.Devices = [Desktop]
+  OnCreate = FormCreate
+  DesignerMasterStyle = 0
+  object rctEsquerda: TRectangle
+    Align = Left
+    Fill.Color = xFFFAFAFA
+    Position.Y = 40.000000000000000000
+    Size.Width = 300.000000000000000000
+    Size.Height = 440.000000000000000000
+    Size.PlatformDefault = False
+    Stroke.Kind = None
+  end
+  object rctTop: TRectangle
+    Align = Top
+    Fill.Color = claGainsboro
+    Size.Width = 640.000000000000000000
+    Size.Height = 40.000000000000000000
+    Size.PlatformDefault = False
+    Stroke.Kind = None
+    object lytPesquisa: TLayout
+      Align = Center
+      Size.Width = 300.000000000000000000
+      Size.Height = 30.000000000000000000
+      Size.PlatformDefault = False
+      TabOrder = 0
+      object Rectangle1: TRectangle
+        Align = Client
+        Cursor = crHandPoint
+        Fill.Color = claWhite
+        Margins.Left = 3.000000000000000000
+        Margins.Top = 3.000000000000000000
+        Margins.Right = 3.000000000000000000
+        Margins.Bottom = 3.000000000000000000
+        Size.Width = 294.000000000000000000
+        Size.Height = 24.000000000000000000
+        Size.PlatformDefault = False
+        Stroke.Kind = None
+        XRadius = 12.000000000000000000
+        YRadius = 12.000000000000000000
+        object Text1: TText
+          Align = Client
+          Size.Width = 294.000000000000000000
+          Size.Height = 24.000000000000000000
+          Size.PlatformDefault = False
+          Text = 'Digite para pesquisar'
+          TextSettings.FontColor = claGray
+        end
+      end
+    end
+  end
+  object rctDireita: TRectangle
+    Align = Client
+    Fill.Color = xFFF0F0F0
+    Size.Width = 340.000000000000000000
+    Size.Height = 440.000000000000000000
+    Size.PlatformDefault = False
+    Stroke.Kind = None
+    object GridPanelLayout1: TGridPanelLayout
+      Align = Center
+      Size.Width = 300.000000000000000000
+      Size.Height = 60.000000000000000000
+      Size.PlatformDefault = False
+      TabOrder = 0
+      ColumnCollection = <
+        item
+          Value = 100.000000000000000000
+        end>
+      ControlCollection = <
+        item
+          Column = 0
+          Control = rctButtonTemaClaro
+          Row = 0
+        end
+        item
+          Column = 0
+          Control = rctButtonTemaEscuro
+          Row = 1
+        end>
+      RowCollection = <
+        item
+          Value = 50.000000000000000000
+        end
+        item
+          Value = 50.000000000000000000
+        end>
+      object rctButtonTemaClaro: TRectangle
+        Align = Client
+        Cursor = crHandPoint
+        Fill.Color = xFF007FFF
+        Margins.Left = 3.000000000000000000
+        Margins.Top = 3.000000000000000000
+        Margins.Right = 3.000000000000000000
+        Margins.Bottom = 3.000000000000000000
+        Size.Width = 294.000000000000000000
+        Size.Height = 24.000000000000000000
+        Size.PlatformDefault = False
+        Stroke.Kind = None
+        XRadius = 12.000000000000000000
+        YRadius = 12.000000000000000000
+        OnClick = rctButtonTemaClaroClick
+        object txtButtonTemaClaro: TText
+          Align = Client
+          HitTest = False
+          Size.Width = 294.000000000000000000
+          Size.Height = 24.000000000000000000
+          Size.PlatformDefault = False
+          Text = 'Tema Claro'
+          TextSettings.FontColor = claWhite
+        end
+      end
+      object rctButtonTemaEscuro: TRectangle
+        Align = Client
+        Cursor = crHandPoint
+        Fill.Color = x50007FFF
+        Margins.Left = 3.000000000000000000
+        Margins.Top = 3.000000000000000000
+        Margins.Right = 3.000000000000000000
+        Margins.Bottom = 3.000000000000000000
+        Size.Width = 294.000000000000000000
+        Size.Height = 24.000000000000000000
+        Size.PlatformDefault = False
+        Stroke.Kind = None
+        XRadius = 12.000000000000000000
+        YRadius = 12.000000000000000000
+        OnClick = rctButtonTemaEscuroClick
+        object txtButtonTemaEscuro: TText
+          Align = Client
+          HitTest = False
+          Size.Width = 294.000000000000000000
+          Size.Height = 24.000000000000000000
+          Size.PlatformDefault = False
+          Text = 'Tema Escuro'
+          TextSettings.FontColor = claWhite
+        end
+      end
+    end
+  end
+end

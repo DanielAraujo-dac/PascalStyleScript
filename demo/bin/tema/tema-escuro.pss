@@ -1,0 +1,46 @@
+{
+  "tema": {
+    "cores": [
+      {
+        "nome": "primaria",
+        "valor": "#FF232323"
+      },
+      {
+        "nome": "primariaVariante",
+        "valor": "#FF1E1E1E"
+      },
+      {
+        "nome": "secundaria",
+        "valor": "#FF282828"
+      },
+      {
+        "nome": "secundariaVariante",
+        "valor": "#FF2D2D2D"
+      }
+    ]
+  },
+  "schema": [
+    {
+      "id": "Conversas.rctTop",
+      "estado": 0,
+      "propriedades": [
+        {
+          "nome": "Fill.Color",
+          "valor": "@cores.primariaVariante"
+        }
+      ],
+      "valor": ""
+    },
+    {
+      "id": "Conversas.rctEsquerda",
+      "estado": 0,
+      "propriedades": [
+        {
+          "nome": "Fill.Color",
+          "valor": "@cores.secundaria"
+        }
+      ],
+      "valor": ""
+    }
+  ]
+}
