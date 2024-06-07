@@ -1,46 +1,29 @@
 {
   "tema": {
-    "cores": [
-      {
-        "nome": "primaria",
-        "valor": "#FF232323"
-      },
-      {
-        "nome": "primariaVariante",
-        "valor": "#FF1E1E1E"
-      },
-      {
-        "nome": "secundaria",
-        "valor": "#FF282828"
-      },
-      {
-        "nome": "secundariaVariante",
-        "valor": "#FF2D2D2D"
-      }
-    ]
+      "cores": [
+          {
+              "nome": "fundo",
+              "valor": "#FF323232"
+          },
+          {
+              "nome": "fundo_claro_1",
+              "valor": "#FF3C3C3C"
+          },
+          {
+              "nome": "fundo_escuro",
+              "valor": "#FF282828"
+          },
+          {
+              "nome": "primaria",
+              "valor": "#FF007FFF"
+          },
+          {
+              "nome": "primaria_clara",
+              "valor": "#50007FFF"
+          }
+      ]
   },
   "schema": [
-    {
-      "id": "Conversas.rctTop",
-      "estado": 0,
-      "propriedades": [
-        {
-          "nome": "Fill.Color",
-          "valor": "@cores.primariaVariante"
-        }
-      ],
-      "valor": ""
-    },
-    {
-      "id": "Conversas.rctEsquerda",
-      "estado": 0,
-      "propriedades": [
-        {
-          "nome": "Fill.Color",
-          "valor": "@cores.secundaria"
-        }
-      ],
-      "valor": ""
-    }
+
   ]
 }
