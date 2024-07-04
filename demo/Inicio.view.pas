@@ -7,7 +7,8 @@ uses
   FMX.Types, FMX.Controls, FMX.Forms, FMX.Graphics, FMX.Dialogs, FMX.Objects,
   FMX.Ani,
   PascalStyleScript,
-  System.JSON, FMX.Controls.Presentation, FMX.StdCtrls, FMX.Layouts;
+  System.JSON, FMX.Controls.Presentation, FMX.StdCtrls, FMX.Layouts, FMX.Effects,
+  FMX.Edit;
 
 type
   TInicioview = class(TForm)
@@ -22,6 +23,7 @@ type
     lytPesquisa: TLayout;
     Rectangle1: TRectangle;
     Text1: TText;
+    Edit1: TEdit;
     procedure FormCreate(Sender: TObject);
     procedure rctButtonTemaClaroClick(Sender: TObject);
     procedure rctButtonTemaEscuroClick(Sender: TObject);
