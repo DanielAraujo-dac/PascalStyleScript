@@ -1,10 +1,8 @@
 ﻿{
-
 Pendencia
   - Registrar Novos
   - CallBack
   - Registro de Propriedades
-
 }
 unit PascalStyleScript;
 
@@ -24,10 +22,11 @@ uses
   System.TypInfo,
   System.UIConsts,
   System.UITypes,
+  FMX.Forms,
   FMX.Ani,
   FMX.Graphics,
   FMX.Objects,
-  FMX.Types, FMX.Controls;
+  FMX.Types, FMX.Controls, FMX.Edit;
 
 type
 
@@ -52,17 +51,16 @@ type
     [JsonConverterAttribute(TJsonPSSCorConverter)]
     valor: TPSSCor;
   end;
-  TPSSCores = TArray<TPSSCorProp>;
 
+  TPSSCores = TArray<TPSSCorProp>;
   TCoresH = record Helper for TPSSCores
     function GetColor(const nome: string): TPSSCor;
   end;
 
   TPascalStyleScript = class
   private type
-
     TPSSClasse = record
-      ClassName: string;
+      ClassName: PTypeInfo;
       Properties: TArray<string>;
     end;
 
@@ -70,6 +68,7 @@ type
       nome: string;
       valor: string;
     end;
+
     TSchemaItem = record
       id: string;
       estado: Integer;
@@ -97,6 +96,13 @@ type
       obj: TFmxObject;
       recursive: Boolean;
     end;
+
+    TPSSProperty = record
+      Owner: TObject;
+      RttiProp: TRttiProperty;
+      function GetValue: TValue;
+      function GetValor: string;
+    end;
   private
     FClasses: TArray<TPSSClasse>;
     FDefault: TPSSData;
@@ -110,17 +116,17 @@ type
     procedure SaveData(const Data: TPSSData; const FileName: String);
     function GetDefaultColor(const Value: TAlphaColor): String;
     procedure Apply(Inst: TPSSObject);
-    function GetRttiProperty(obj: TObject; propName: string): TRttiProperty;
+    //function GetRttiProperty(obj: TObject; propName: string): TRttiProperty;
+    function GetRttiProperty(obj: TObject; propName: string): TPSSProperty;
     function Next(Obj: TFmxObject): Boolean;
-    procedure RegisterClasse(const Name: string;
-      const Propriedades: TArray<string>);
+
+    procedure RegisterTipo<T>(const Propriedades: TArray<string>); overload;
+    function GetClassFromTypeInfo(TypeInfo: PTypeInfo): TClass;
   public
     class function Instance: TPascalStyleScript;
     class function New: TPascalStyleScript;
-
     destructor Destroy; override;
     procedure LoadFromFile(sFile: String);
-
     function RegisterObject(const Value: TFmxObject; ID: String = ''; Recursive: Boolean = True): TPascalStyleScript;
   end;
 
@@ -128,6 +134,7 @@ implementation
 
 const
   DefaultFile = 'tema/default.pss';
+  DefaultTemaCores = '@cores';
 
 var
   FInstance: TPascalStyleScript;
@@ -158,7 +165,15 @@ constructor TPascalStyleScript.Create;
 begin
   LoadDefault;
   FObjects := TList<TPSSObject>.Create;
-  RegisterClasse('TFormularioBase', ['Fill.Color']);
+  // Registro da classe TShape com suas propriedades de estilo
+  RegisterTipo<TShape>(['Fill.Color', 'Stroke.Color']);
+  // Registro da classe que possui TextSettings.Font
+  RegisterTipo<ITextSettings>([
+    'TextSettings.FontColor',
+    'TextSettings.Font.Size',
+    'TextSettings.Font.Family',
+    'TextSettings.Font.Style'
+  ]);
 end;
 
 destructor TPascalStyleScript.Destroy;
@@ -177,50 +192,98 @@ begin
   InternalLoad(LoadData(sFile));
 end;
 
-function TPascalStyleScript.GetRttiProperty(obj: TObject; propName: string): TRttiProperty;
+//function TPascalStyleScript.GetRttiProperty(obj: TObject; propName: string): TRttiProperty;
+//var
+//  asNames: TArray<String>;
+//  ctx: TRttiContext;
+//  objType: TRttiType;
+//  rpPropriedade: TRttiProperty;
+//  i: Integer;
+//begin
+//  Result := nil;
+//  // Obtém o contexto RTTI para o tipo do objeto
+//  objType := ctx.GetType(obj.ClassType);
+//  asNames := propName.Split(['.']);
+//  for I := 0 to Pred(Length(asNames)) do
+//  begin
+//    // Obtém a propriedade pelo nome atual
+//    rpPropriedade := objType.GetProperty(asNames[I]);
+//    if not Assigned(rpPropriedade) then
+//      Exit(nil);
+//
+//    // Se for a última parte do nome, finaliza
+//    if I = Pred(Length(asNames)) then
+//      Exit(rpPropriedade);
+//
+//    // Se não for uma classe, finaliza sem encontrar
+//    if rpPropriedade.PropertyType.TypeKind <> tkClass then
+//      Exit(nil);
+//
+//    // Obtém o tipo da classe para continuar navegando
+//    objType := rpPropriedade.PropertyType;
+//  end;
+//end;
+
+function TPascalStyleScript.GetRttiProperty(obj: TObject; propName: string): TPSSProperty;
 var
   asNames: TArray<String>;
   ctx: TRttiContext;
   objType: TRttiType;
-  rpPropriedade: TRttiProperty;
+  rpProp: TRttiProperty;
   i: Integer;
 begin
-  Result := nil;
+  Result.Owner := nil;
+  Result.RttiProp := nil;
   // Obtém o contexto RTTI para o tipo do objeto
   objType := ctx.GetType(obj.ClassType);
   asNames := propName.Split(['.']);
-  for I := 0 to Pred(Length(asNames)) do
+  for i := 0 to High(asNames) do
   begin
     // Obtém a propriedade pelo nome atual
-    rpPropriedade := objType.GetProperty(asNames[I]);
-    if not Assigned(rpPropriedade) then
-      Exit(nil);
-
+    rpProp := objType.GetProperty(asNames[i]);
+    if not Assigned(rpProp) then
+      Exit;
+    // Salva o objeto atual como o dono da propriedade
+    Result.Owner := obj;
+    Result.RttiProp := rpProp;
     // Se for a última parte do nome, finaliza
-    if I = Pred(Length(asNames)) then
-      Exit(rpPropriedade);
-
+    if i = High(asNames) then
+      Exit;
     // Se não for uma classe, finaliza sem encontrar
-    if rpPropriedade.PropertyType.TypeKind <> tkClass then
-      Exit(nil);
-
+    if rpProp.PropertyType.TypeKind <> tkClass then
+      Exit;
     // Obtém o tipo da classe para continuar navegando
-    objType := rpPropriedade.PropertyType;
+    objType := rpProp.PropertyType;
+    // Atualiza o objeto atual para a próxima propriedade
+    obj := rpProp.GetValue(obj).AsObject;
   end;
 end;
 
 procedure TPascalStyleScript.Apply(Inst: TPSSObject);
 var
+  PSSClasse: TPSSClasse;
+  sPropName: String;
+
   Item: TSchemaItem;
   sDefault: String;
   PropValue: String;
   ObjAux: TFmxObject;
   InstAux: TPSSObject;
 begin
-  if not Assigned(Inst.Obj) then
-    Exit;
-
+  if not Assigned(Inst.Obj) then Exit;
   try
+    for PSSClasse in FClasses do
+    begin
+      if ((PSSClasse.ClassName.Kind = tkClass) and Inst.obj.InheritsFrom(GetClassFromTypeInfo(PSSClasse.ClassName))) or
+         ((PSSClasse.ClassName.Kind = tkInterface) and Supports(Inst.obj, PSSClasse.ClassName.TypeData.GUID))
+         then
+      begin
+        for sPropName in PSSClasse.Properties do
+        begin
+
+        end;
+      end;
+    end;
     if Inst.obj.InheritsFrom(FMX.Objects.TShape) then
     begin
       PropValue := EmptyStr;
@@ -229,27 +292,19 @@ begin
         Item.id := Inst.id;
         Item.valor := EmptyStr;
         Item.estado := 0;
-
         FDefault.SetItem(Inst.id, Item);
       end;
-
       if not Item.TryGetPropriedade('fill.color', PropValue) then
       begin
         sDefault := GetDefaultColor(TRectangle(Inst.obj).Fill.Color);
         if sDefault.Trim.IsEmpty then
-          sDefault := AlphaColorToString(TRectangle(Inst.obj).Fill.Color)
-        else
-          sDefault := '@cores.'+ sDefault;
-
+          sDefault := AlphaColorToString(TRectangle(Inst.obj).Fill.Color);
         Item.SetPropriedade('fill.color', sDefault);
         FDefault.SetItem(Inst.id, Item);
       end;
-
       if Length(FData.schema) > 0 then
         FData.TryGetItem(Inst.id, Item);
-
       Item.TryGetPropriedade('fill.color', PropValue);
-
       if Length(FData.tema.cores) > 0 then
       begin
         if PropValue.StartsWith('@cores.') then
@@ -258,10 +313,8 @@ begin
       else
       if PropValue.StartsWith('@cores.') then
         PropValue := FDefault.tema.cores.GetColor(PropValue.Replace('@cores.', ''));
-
       if PropValue.Trim.IsEmpty then
         Exit;
-
       TAnimator.AnimateColor(Inst.obj, 'fill.color', TPSSCor(PropValue), 0.25, TAnimationType.InOut, TInterpolationType.Quadratic);
     end;
   finally
@@ -307,57 +360,94 @@ begin
   end;
 end;
 
+function TPascalStyleScript.GetClassFromTypeInfo(TypeInfo: PTypeInfo): TClass;
+var
+  RttiContext: TRttiContext;
+  RttiType: TRttiType;
+begin
+  Result := nil;
+  RttiContext := TRttiContext.Create;
+  try
+    RttiType := RttiContext.GetType(TypeInfo);
+    if RttiType is TRttiInstanceType then
+      Result := TRttiInstanceType(RttiType).MetaclassType;
+  finally
+    RttiContext.Free;
+  end;
+end;
+
 function TPascalStyleScript.RegisterObject(const Value: TFmxObject; ID: String = ''; Recursive: Boolean = True): TPascalStyleScript;
 var
+  obj: TPSSObject;
   PSSClasse: TPSSClasse;
-  propriedade: TRttiProperty;
-  valorPadrao: TValue;
+  sPropName: String;
+  PSSProp: TPSSProperty;
+  PropValue: TValue;
   schemaItem: TSchemaItem;
-  propriedadeItem: TSchemaItemPropriedade;
-  i: Integer;
+  sValue: String;
+  I: Integer;
 begin
   Result := Self;
 
+  if not Assigned(Value) then
+    raise Exception.Create('Objeto não criado!');
+
+  obj.id := IfThen(ID.Trim.IsEmpty, String(Value.Name), ID);
+  obj.Obj := Value;
+  obj.Recursive := Recursive;
+  FObjects.Add(obj);
+
   // Verifica se o ID já existe em FDefault
-  if not FDefault.TryGetItem(ID, schemaItem) then
+  if not FDefault.TryGetItem(obj.id, schemaItem) then
   begin
+    schemaItem.id := obj.id;
+    schemaItem.estado := 1;
+  end;
+  try
     // Verifica se a classe do objeto está em FClasses
     for PSSClasse in FClasses do
     begin
-      if Value.InheritsFrom(TFmxObjectClass(PSSClasse.ClassName)) then
+      if ((PSSClasse.ClassName.Kind = tkClass) and Value.InheritsFrom(GetClassFromTypeInfo(PSSClasse.ClassName))) or
+         ((PSSClasse.ClassName.Kind = tkInterface) and Supports(Value, PSSClasse.ClassName.TypeData.GUID))
+         then
       begin
         // Itera pelas propriedades da classe para obter os valores padrão
-        for i := 0 to High(PSSClasse.Properties) do
+        for sPropName in PSSClasse.Properties do
         begin
-          propriedade := GetRttiProperty(Value, PSSClasse.Properties[i]);
-          if Assigned(propriedade) then
+          if schemaItem.TryGetPropriedade(sPropName, sValue) then
+            Continue;
+
+          PSSProp := GetRttiProperty(Value, sPropName);
+          if Assigned(PSSProp.RttiProp) then
           begin
-            // Obtém o valor padrão da propriedade
-            valorPadrao := propriedade.GetValue(Value);
+            // Obtém o valor padrão da PSSProp
+            PropValue := PSSProp.GetValue;
+            if PSSProp.RttiProp.PropertyType.Handle = TypeInfo(TAlphaColor) then
+            begin
+              sValue := GetDefaultColor(TAlphaColor(PropValue.AsInteger));
+              if sValue.Trim.IsEmpty then
+                sValue := TPSSCor(TAlphaColor(PropValue.AsInteger));
 
-            // Armazena o valor padrão na estrutura de dados FDefault
-            propriedadeItem.nome := PSSClasse.Properties[i];
-            propriedadeItem.valor := valorPadrao.ToString; // Ajuste conforme necessidade
-
-            SetLength(schemaItem.propriedades, Length(schemaItem.propriedades) + 1);
-            schemaItem.propriedades[High(schemaItem.propriedades)] := propriedadeItem;
+              schemaItem.SetPropriedade(sPropName, sValue)
+            end
+            else // Armazena o valor padrão na estrutura de dados FDefault
+              schemaItem.SetPropriedade(sPropName, PropValue.ToString);
           end;
         end;
-
         // Define o ID e adiciona à FDefault
-        schemaItem.id := ID;
-        FDefault.SetItem(ID, schemaItem);
-        Break; // Sai do loop de classes após encontrar a correspondente
+        FDefault.SetItem(obj.id, schemaItem);
       end;
     end;
+  finally
+    FDefault.SetItem(obj.id, schemaItem);
   end;
-
   // Se Recursive for True e o objeto tiver filhos, registra recursivamente os filhos
-  if Recursive and Assigned(Value.Children) then
-  begin
-    for i := 0 to Value.ChildrenCount - 1 do
-      RegisterObject(Value.Children[i], ID + '.' + Value.Children[i].Name, Recursive);
-  end;
+  if Recursive and Assigned(Value.Children) and (Value.ChildrenCount > 0) then
+    for I := 0 to Value.ChildrenCount - 1 do
+      if Assigned(Value.Children[I]) then
+        RegisterObject(Value.Children[I], obj.id + '.' + Value.Children[I].Name, Recursive);
+
+  Apply(obj);
 end;
 
 //function TPascalStyleScript.RegisterObject(const Value: TFmxObject; ID: String = ''; Recursive: Boolean = True): TPascalStyleScript;
@@ -378,14 +468,13 @@ var
 begin
   for p in FDefault.tema.cores do
     if TAlphaColor(P.valor) = Value then
-      Exit(p.nome);
+      Exit(DefaultTemaCores +'.'+ p.nome);
 end;
 
 function TPascalStyleScript.LoadData(const FileName: String): TPSSData;
 begin
   if not TFile.Exists(FileName) then
     raise Exception.Create('Arquivo de tema não encontrado!');
-
   with TStringStream.Create do
   try
     LoadFromFile(FileName);
@@ -415,14 +504,13 @@ begin
   end;
 end;
 
-procedure TPascalStyleScript.RegisterClasse(const Name: string; const Propriedades: TArray<string>);
+procedure TPascalStyleScript.RegisterTipo<T>(const Propriedades: TArray<string>);
 var
   PSSClasse: TPSSClasse;
 begin
   // Configurar a estrutura TPSSClasse com o nome da classe e propriedades
-  PSSClasse.ClassName := Name;
+  PSSClasse.ClassName := TypeInfo(T);
   PSSClasse.Properties := Propriedades;
-
   // Adicionar a classe configurada ao array FClasses
   SetLength(FClasses, Length(FClasses) + 1);
   FClasses[High(FClasses)] := PSSClasse;
@@ -439,7 +527,6 @@ begin
   begin
     if not p.nome.ToLower.Equals(Nome.ToLower) then
       Continue;
-
     Value := p.valor;
     Exit(True);
   end;
@@ -463,7 +550,6 @@ begin
       Exit;
     end;
   end;
-
   SetLength(propriedades, Succ(Length(propriedades)));
   propriedades[Pred(Length(propriedades))].nome := Nome;
   propriedades[Pred(Length(propriedades))].valor := valor;
@@ -486,7 +572,6 @@ begin
   begin
     if R.id <> id then
       Continue;
-
     Value := R;
     Exit(True);
   end;
@@ -504,7 +589,6 @@ begin
       Exit;
     end;
   end;
-
   SetLength(schema, Succ(Length(schema)));
   schema[Pred(Length(schema))] := value;
 end;
@@ -544,7 +628,6 @@ begin
 end;
 
 { TJsonPSSCorConverter }
-
 function TJsonPSSCorConverter.ReadJson(const AReader: TJsonReader; ATypeInf: PTypeInfo; const AExistingValue: TValue; const ASerializer: TJsonSerializer): TValue;
 var
   Cor: TPSSCor;
@@ -559,10 +642,21 @@ begin
   AWriter.WriteValue(AValue.AsType<TPSSCor>.Valor);
 end;
 
+{ TPascalStyleScript.TPSSProperty }
+
+function TPascalStyleScript.TPSSProperty.GetValor: string;
+begin
+  //
+end;
+
+function TPascalStyleScript.TPSSProperty.GetValue: TValue;
+begin
+  Result := Self.RttiProp.GetValue(Self.Owner);
+end;
+
 initialization
   FInstance := TPascalStyleScript.New;
 
 finalization
   FreeAndNil(FInstance);
-
 end.
